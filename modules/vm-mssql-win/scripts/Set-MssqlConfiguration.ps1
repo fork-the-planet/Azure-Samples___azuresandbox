@@ -232,20 +232,21 @@ function Get-MatchingAzureDataDiskBySize {
 function Grant-SqlFullControl {
     param ( [string]$FolderPath )
 
-    Write-ScriptLog "Getting SQL Server Service account..."
+    # Grant FullControl to the SQL Server Database Engine per-service SID rather
+    # than the account returned by querying the service's logon name. The
+    # per-service SID (NT SERVICE\MSSQLSERVER) is always present in the service
+    # process token regardless of the configured logon account, survives service
+    # account changes, and matches the permissions the SQL Server installer
+    # applies to its data directories. The default instance name is MSSQLSERVER,
+    # consistent with the rest of this script.
+    # Reference: https://learn.microsoft.com/sql/database-engine/configure-windows/configure-file-system-permissions-for-database-engine-access
+    $sqlServiceSid = 'NT SERVICE\MSSQLSERVER'
 
-    try {
-        $serviceAccount = Get-CimInstance -ClassName Win32_Service -Filter "Name='MSSQLSERVER'" | Select-Object -ExpandProperty StartName
-    }
-    catch {
-        Exit-WithError $_
-    }
-
-    Write-ScriptLog "Updating ACL for folder '$FolderPath' to allow 'FullControl' for '$serviceAccount'..."
+    Write-ScriptLog "Updating ACL for folder '$FolderPath' to allow 'FullControl' for '$sqlServiceSid'..."
 
     try {
         $folderAcl = Get-ACL $FolderPath
-        $fileSystemAccessRule = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule( $serviceAccount, "FullControl", 3, 0, "Allow" )
+        $fileSystemAccessRule = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule( $sqlServiceSid, "FullControl", 3, 0, "Allow" )
         $folderAcl.SetAccessRule( $fileSystemAccessRule )
         Set-Acl -Path $FolderPath -AclObject $folderAcl
     }
@@ -846,18 +847,25 @@ $taskAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-Exec
 $taskTrigger = New-ScheduledTaskTrigger -AtStartup
 $taskSettings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 
-Write-ScriptLog "Registering scheduled task to execute '$sqlStartupScriptPath' under user '$DomainAdminUser'..."
+Write-ScriptLog "Registering scheduled task to execute '$sqlStartupScriptPath' as 'NT AUTHORITY\SYSTEM'..."
+
+# The startup task performs only local operations (rebuild the ephemeral temp disk stripe,
+# recreate tempdb folders, fix the pagefile, start SQL Server) and never opens a SQL
+# connection, so it does not require the domain admin / SQL sysadmin identity. Run it as
+# LocalSystem: a boot-time (AtStartup) batch logon with a stored domain password is
+# unreliable (it races the domain controller secure channel at boot) and is blocked by
+# Credential Guard (default-on in Windows Server 2025). SYSTEM is a local principal with
+# no stored password and no domain controller dependency, so the task launches reliably.
+$taskPrincipal = New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount -RunLevel 'Highest'
 
 try {
     Register-ScheduledTask `
         -Force `
-        -Password $adminPwd `
-        -User $DomainAdminUser `
+        -Principal $taskPrincipal `
         -TaskName $taskName `
         -Action $taskAction `
         -Trigger $taskTrigger `
         -Settings $taskSettings `
-        -RunLevel 'Highest' `
         -Description "Prepare temp drive folders for tempdb and start SQL Server."
 }
 catch {
