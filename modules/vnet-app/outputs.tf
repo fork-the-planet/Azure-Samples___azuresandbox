@@ -30,6 +30,7 @@ output "resource_ids" {
     application_insights     = azurerm_application_insights.this.id
     container_registry       = azurerm_container_registry.this.id
     storage_account          = azurerm_storage_account.this.id
+    storage_container        = azurerm_storage_container.this.id
     storage_share            = azurerm_storage_share.this.id
     virtual_machine_jumpwin1 = azurerm_windows_virtual_machine.this.id
     virtual_network_app      = azurerm_virtual_network.this.id
@@ -41,6 +42,7 @@ output "resource_names" {
     application_insights     = azurerm_application_insights.this.name
     container_registry       = azurerm_container_registry.this.name
     storage_account          = azurerm_storage_account.this.name
+    storage_container        = azurerm_storage_container.this.name
     storage_share            = azurerm_storage_share.this.name
     virtual_machine_jumpwin1 = azurerm_windows_virtual_machine.this.name
     virtual_network_app      = azurerm_virtual_network.this.name
