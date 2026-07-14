@@ -3,7 +3,6 @@ data "azuread_service_principal" "this" {
   count     = var.enable_module_mssql ? 1 : 0
   client_id = var.arm_client_id
 }
-
 #endregion
 
 #region resources
@@ -17,7 +16,7 @@ resource "azuread_group" "sql_admins" {
 resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
   location = var.location
-  tags     = var.tags
+  tags     = local.tags
 }
 
 resource "azurerm_virtual_machine_run_command" "create_mssql_db_user" {
@@ -209,7 +208,7 @@ module "vnet_shared" {
   arm_client_secret   = var.arm_client_secret
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
-  tags                = var.tags
+  tags                = local.tags
   unique_seed         = module.naming.unique-seed
   user_object_id      = var.user_object_id
 }
@@ -238,7 +237,7 @@ module "vnet_app" {
   monitor_private_link_scope_name = module.vnet_shared.resource_names["monitor_private_link_scope"]
   private_dns_zones_vnet_shared   = module.vnet_shared.private_dns_zones
   resource_group_name             = azurerm_resource_group.this.name
-  tags                            = var.tags
+  tags                            = local.tags
   unique_seed                     = module.naming.unique-seed
   user_object_id                  = var.user_object_id
   virtual_network_shared_id       = module.vnet_shared.resource_ids["virtual_network_shared"]
@@ -264,7 +263,7 @@ module "vm_jumpbox_linux" {
   storage_account_name          = module.vnet_app[0].resource_names["storage_account"]
   storage_share_name            = module.vnet_app[0].resource_names["storage_share"]
   subnet_id                     = module.vnet_app[0].subnets["snet-app-01"].id
-  tags                          = var.tags
+  tags                          = local.tags
 
   depends_on = [module.vnet_app[0].configure_azure_files_id] # Ensures that Azure Files is configured
 }
@@ -290,7 +289,7 @@ module "vm_mssql_win" {
   storage_container_id            = module.vnet_app[0].resource_ids["storage_container"]
   storage_container_name          = module.vnet_app[0].storage_container_name
   subnet_id                       = module.vnet_app[0].subnets["snet-db-01"].id
-  tags                            = var.tags
+  tags                            = local.tags
 
   depends_on = [module.vnet_app[0].configure_azure_files_id] # Ensures that Azure Files is configured
 }
@@ -306,7 +305,7 @@ module "mssql" {
   sql_admin_login_name = azuread_group.sql_admins[0].display_name
   sql_admin_object_id  = azuread_group.sql_admins[0].object_id
   subnet_id            = module.vnet_app[0].subnets["snet-privatelink-01"].id
-  tags                 = var.tags
+  tags                 = local.tags
   unique_seed          = module.naming.unique-seed
 
   depends_on = [module.vnet_app[0].configure_azure_files_id] # Ensures that Azure Files is configured
@@ -323,7 +322,7 @@ module "mysql" {
   private_dns_zone_id = module.vnet_app[0].private_dns_zones["privatelink.mysql.database.azure.com"].id
   resource_group_name = azurerm_resource_group.this.name
   subnet_id           = module.vnet_app[0].subnets["snet-privatelink-01"].id
-  tags                = var.tags
+  tags                = local.tags
   unique_seed         = module.naming.unique-seed
 
   depends_on = [module.vnet_app[0].configure_azure_files_id] # Ensures that Azure Files is configured
@@ -338,7 +337,7 @@ module "vwan" {
   key_vault_id        = module.vnet_shared.resource_ids["key_vault"]
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
-  tags                = var.tags
+  tags                = local.tags
 
   virtual_networks = {
     virtual_network_shared = module.vnet_shared.resource_ids["virtual_network_shared"]
@@ -363,7 +362,7 @@ module "petstore" {
   private_dns_zone_id        = module.vnet_app[0].private_dns_zones["privatelink.${var.location}.azurecontainerapps.io"].id
   private_endpoint_subnet_id = module.vnet_app[0].subnets["snet-privatelink-01"].id
   resource_group_name        = azurerm_resource_group.this.name
-  tags                       = var.tags
+  tags                       = local.tags
   unique_seed                = module.naming.unique-seed
 
   depends_on = [module.vnet_app[0].azure_files_config_vm_extension_id] # Ensure that Azure Files is configured
@@ -382,7 +381,7 @@ module "avd" {
   resource_group_name           = azurerm_resource_group.this.name
   security_principal_object_ids = [var.user_object_id]
   subnet_id                     = module.vnet_app[0].subnets["snet-app-01"].id
-  tags                          = var.tags
+  tags                          = local.tags
   unique_seed                   = module.naming.unique-seed
 
   depends_on = [module.vnet_app[0].azure_files_config_vm_extension_id] # Ensure that Azure Files is configured
@@ -400,7 +399,7 @@ module "vnet_onprem" {
   location               = azurerm_resource_group.this.location
   resource_group_name    = azurerm_resource_group.this.name
   subnets_cloud          = module.vnet_shared.subnets
-  tags                   = var.tags
+  tags                   = local.tags
 
   virtual_networks_cloud = {
     virtual_network_shared = {
@@ -418,52 +417,5 @@ module "vnet_onprem" {
 
   depends_on = [module.vwan[0].resource_ids] # Ensure vwan module resources are provisioned
 }
-
-# ai-foundry is currently unavailable due to dependencies on retired features. It will be re-enabled in a future update with a redesigned implementation.
-
-# module "ai_foundry" {
-#   source = "./extras/modules/retired/ai-foundry"
-
-#   count = var.enable_module_ai_foundry ? 1 : 0
-
-#   key_vault_id          = module.vnet_shared.resource_ids["key_vault"]
-#   location              = azurerm_resource_group.this.location
-#   private_dns_zones     = module.vnet_app[0].private_dns_zones
-#   resource_group_name   = azurerm_resource_group.this.name
-#   storage_account_id    = module.vnet_app[0].resource_ids["storage_account"]
-#   storage_file_endpoint = module.vnet_app[0].storage_endpoints["file"]
-#   storage_share_name    = module.vnet_app[0].resource_names["storage_share"]
-#   subnets               = module.vnet_app[0].subnets
-#   tags                  = var.tags
-#   unique_seed           = module.naming.unique-seed
-#   user_object_id        = var.user_object_id
-
-#   depends_on = [module.vnet_app[0].azure_files_config_vm_extension_id] # Ensure that Azure Files is configured
-# }
-
-
-# vm-devops-win is currently unavailable due to dependencies on retired features. It will be re-enabled in a future update with a redesigned implementation.
-# module "vm_devops_win" {
-#   source = "./extras/modules/vm-devops-win"
-
-#   count = var.enable_module_vm_devops_win ? 1 : 0
-
-#   admin_password          = module.vnet_shared.admin_password
-#   admin_username          = module.vnet_shared.admin_username
-#   arm_client_secret       = var.arm_client_secret
-#   automation_account_name = module.vnet_shared.resource_names["automation_account"]
-#   key_vault_id            = module.vnet_shared.resource_ids["key_vault"]
-#   location                = azurerm_resource_group.this.location
-#   resource_group_name     = azurerm_resource_group.this.name
-#   storage_account_id      = module.vnet_app[0].resource_ids["storage_account"]
-#   storage_account_name    = module.vnet_app[0].resource_names["storage_account"]
-#   storage_blob_endpoint   = module.vnet_app[0].storage_endpoints["blob"]
-#   storage_container_name  = module.vnet_app[0].storage_container_name
-#   vm_devops_win_instances = 1
-#   subnet_id               = module.vnet_app[0].subnets["snet-app-01"].id
-#   tags                    = var.tags
-
-#   depends_on = [module.vnet_app[0].azure_files_config_vm_extension_id] # Ensure that Azure Files is configured
-# }
 
 #endregion
