@@ -8,6 +8,12 @@ variable "aad_tenant_id" {
   }
 }
 
+variable "additional_tags" {
+  type        = map(string)
+  description = "Extra tags merged over the base tags map."
+  default     = {}
+}
+
 variable "arm_client_id" {
   type        = string
   description = "The AppId of the service principal used for authenticating with Azure. Must have an 'Owner' role assignment."
@@ -28,12 +34,6 @@ variable "arm_client_secret" {
     error_message = "Must be at least 8 characters long."
   }
 }
-
-# variable "enable_module_ai_foundry" {
-#   type        = bool
-#   description = "Set to true to enable the AI Foundry module, false to skip it."
-#   default     = false
-# }
 
 variable "enable_module_avd" {
   type        = bool

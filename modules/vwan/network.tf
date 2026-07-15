@@ -43,7 +43,6 @@ resource "azurerm_vpn_server_configuration" "this" {
   resource_group_name      = var.resource_group_name
   location                 = var.location
   vpn_authentication_types = ["Certificate"]
-  tags                     = var.tags
 
   client_root_certificate {
     name             = "Self signed certificate"
