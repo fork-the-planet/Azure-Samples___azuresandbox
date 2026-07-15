@@ -12,7 +12,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
     open-pull-requests-limit: 20
 
   - package-ecosystem: terraform
@@ -27,7 +26,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/modules/mysql"
@@ -41,7 +39,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/modules/vm-jumpbox-linux"
@@ -55,7 +52,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/modules/vm-mssql-win"
@@ -69,7 +65,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/modules/vnet-app"
@@ -83,7 +78,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/modules/vnet-shared"
@@ -97,7 +91,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/modules/vwan"
@@ -111,7 +104,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/extras/configurations/rg-devops-iac"
@@ -125,7 +117,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/extras/configurations/rg-devops-iac/modules/vm-jumpbox-linux"
@@ -139,7 +130,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/extras/modules/avd"
@@ -153,7 +143,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/extras/modules/petstore"
@@ -167,7 +156,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: terraform
     directory: "/extras/modules/vnet-onprem"
@@ -181,7 +169,6 @@ updates:
       terraform-all:
         patterns:
           - "*"
-    versioning-strategy: increase
 
   - package-ecosystem: github-actions
     directory: "/"
